@@ -12,7 +12,7 @@
 
  .brand-logos{display:flex;align-items:center;gap:10px;flex:0 0 auto}.brand-item{width:62px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}.brand-item img{display:block;width:54px;height:54px;object-fit:contain}.brand-item span{min-height:18px;color:#52677c;font-size:9px;line-height:1.05;font-weight:750;letter-spacing:.04em}.hero-subtitle{margin:8px 0 0;color:#52677c;font-size:14px;line-height:1.45}
 @media(max-width:720px){.hero{display:block}.brand-logos{margin-bottom:14px}}
-.eta-note{margin:10px 0 0;color:#6a7d90;font-size:12px;line-height:1.45}.speed-control{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}.speed-control label{display:flex;align-items:center;gap:10px}.speed-control input{width:110px;text-align:center}.speed-adjust{width:42px;height:42px;border:1px solid #bdcad6;border-radius:9px;background:#fff;color:#174f7e;font-size:23px;font-weight:700;line-height:1;cursor:pointer}.speed-adjust:hover{background:#eef5fa;border-color:#7199bc}.speed-units{color:#52677c;font-size:14px;font-weight:600}.etd-input-wrap{position:relative;display:flex;gap:8px}.etd-input-wrap input[type=text]{flex:1;min-width:0}.etd-picker-button{flex:0 0 46px;border:1px solid #bdcad6;border-radius:9px;background:#fff;font-size:19px;cursor:pointer}.etd-picker-button:hover{background:#eef5fa}.etd-picker-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.eta-note{margin:10px 0 0;color:#6a7d90;font-size:12px;line-height:1.45}.speed-control{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}.speed-control label{display:flex;align-items:center;gap:10px}.speed-control input{width:110px;text-align:center}.speed-adjust{width:42px;height:42px;border:1px solid #bdcad6;border-radius:9px;background:#fff;color:#174f7e;font-size:23px;font-weight:700;line-height:1;cursor:pointer}.speed-adjust:hover{background:#eef5fa;border-color:#7199bc}.speed-units{color:#52677c;font-size:14px;font-weight:600}.etd-field{display:grid;gap:8px}.etd-title{color:#344a60;font-size:14px;font-weight:650}.etd-input-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px}.etd-input-wrap label{min-width:0}.etd-input-wrap input{min-width:0;min-height:48px;padding:8px;font-size:16px;touch-action:manipulation}
 </style>
 </head>
 <body>
@@ -31,7 +31,7 @@
         <label>Nombre de la nave<input id="ship" type="text" autocomplete="off" placeholder="Ej.: NAVE EJEMPLO" maxlength="80"></label>
         <label>Puerto de origen<select id="origin"><option value="">Selecciona el origen</option></select></label>
         <label>Puerto de destino<select id="destination"><option value="">Selecciona el destino</option></select></label>
-        <label>ETD · fecha y hora local de zarpe<div class="etd-input-wrap"><input id="etd" type="text" placeholder="dd/mm/aa hh:mm" inputmode="numeric" autocomplete="off" aria-label="ETD: día, mes, año de dos dígitos, hora y minutos"><button id="etd-picker-button" class="etd-picker-button" type="button" aria-label="Elegir fecha y hora">📅</button><input id="etd-picker" class="etd-picker-hidden" type="datetime-local" tabindex="-1" aria-hidden="true"></div></label>
+        <div class="etd-field"><span class="etd-title">ETD · fecha y hora local de zarpe</span><div class="etd-input-wrap"><label>Fecha<input id="etd-date" type="date" aria-label="Fecha local de zarpe"></label><label>Hora<input id="etd-time" type="time" aria-label="Hora local de zarpe"></label></div></div>
       </div>
       <p class="eta-note">Ingresa el ETD para ver las ETA.</p>
     </section>
@@ -110,9 +110,8 @@ window.RT3_DATA = [{"file":"ANCUD-COLO COLO-TRES CRUCES.rt3","nodes":["ANCUD","C
   const originSelect = document.getElementById('origin');
   const destinationSelect = document.getElementById('destination');
   const shipInput = document.getElementById('ship');
-  const etdInput = document.getElementById('etd');
-  const etdPicker = document.getElementById('etd-picker');
-  const etdPickerButton = document.getElementById('etd-picker-button');
+  const etdDateInput = document.getElementById('etd-date');
+  const etdTimeInput = document.getElementById('etd-time');
   const transitSpeedInput = document.getElementById('transit-speed');
   const speedDecreaseButton = document.getElementById('speed-decrease');
   const speedIncreaseButton = document.getElementById('speed-increase');
@@ -381,10 +380,13 @@ window.RT3_DATA = [{"file":"ANCUD-COLO COLO-TRES CRUCES.rt3","nodes":["ANCUD","C
   }
 
   function departureWallClockMs() {
-    const match = etdInput.value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})\s+(\d{1,2}):(\d{2})$/);
-    if (!match) return null;
-    const [, day, month, shortYear, hour, minute] = match.map(Number);
-    const year = 2000 + shortYear;
+    const dateMatch = etdDateInput.value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const timeMatch = etdTimeInput.value.match(/^(\d{2}):(\d{2})$/);
+    if (!dateMatch || !timeMatch) return null;
+    const [, yearText, monthText, dayText] = dateMatch;
+    const [, hourText, minuteText] = timeMatch;
+    const year = Number(yearText), month = Number(monthText), day = Number(dayText);
+    const hour = Number(hourText), minute = Number(minuteText);
     const timestamp = Date.UTC(year, month - 1, day, hour, minute);
     const check = new Date(timestamp);
     if (check.getUTCFullYear() !== year || check.getUTCMonth() !== month - 1 || check.getUTCDate() !== day || hour > 23 || minute > 59) return null;
@@ -396,18 +398,6 @@ window.RT3_DATA = [{"file":"ANCUD-COLO COLO-TRES CRUCES.rt3","nodes":["ANCUD","C
     const pad = value => String(value).padStart(2, '0');
     return `${pad(date.getUTCDate())}/${pad(date.getUTCMonth() + 1)}/${String(date.getUTCFullYear()).slice(-2)} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
   }
-
-  etdPickerButton.addEventListener('click', () => {
-    if (typeof etdPicker.showPicker === 'function') etdPicker.showPicker();
-    else etdPicker.click();
-  });
-  etdPicker.addEventListener('change', () => {
-    const match = etdPicker.value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
-    if (!match) return;
-    const [, year, month, day, hour, minute] = match;
-    etdInput.value = `${day}/${month}/${year.slice(-2)} ${hour}:${minute}`;
-    etdInput.dispatchEvent(new Event('input', { bubbles: true }));
-  });
 
   function distanceNmBetween(a, b) {
     const radians = degrees => degrees * Math.PI / 180;
@@ -754,7 +744,10 @@ window.RT3_DATA = [{"file":"ANCUD-COLO COLO-TRES CRUCES.rt3","nodes":["ANCUD","C
   originSelect.addEventListener('change', () => { selectedSegments = []; currentNode = ''; updateDestinationOptions(); renderStep(); });
   destinationSelect.addEventListener('change', () => { selectedSegments = []; currentNode = ''; renderStep(); });
   const refreshWaypointEtas = () => { if (routeMap && selectedSegments.length) addWaypointLabels(selectedSegments, null, calculateWaypointEtas(selectedSegments)); };
-  etdInput.addEventListener('input', refreshWaypointEtas);
+  [etdDateInput, etdTimeInput].forEach(input => {
+    input.addEventListener('input', refreshWaypointEtas);
+    input.addEventListener('change', refreshWaypointEtas);
+  });
   transitSpeedInput.addEventListener('input', refreshWaypointEtas);
   transitSpeedInput.addEventListener('change', refreshWaypointEtas);
   function adjustTransitSpeed(change) {
